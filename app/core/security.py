@@ -1,11 +1,21 @@
 import bcrypt
+
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 
 from jose import jwt
 
 from app.core.config import settings
 
+
 def hash_password(password: str) -> str:
+    """
+    Hash password bằng bcrypt.
+    """
+
+    if not password:
+        raise ValueError("Password cannot be empty")
+
     password_bytes = password.encode("utf-8")
 
     salt = bcrypt.gensalt()
@@ -22,19 +32,34 @@ def verify_password(
     plain_password: str,
     hashed_password: str
 ) -> bool:
+    """
+    Kiểm tra password người dùng với bcrypt hash trong database.
+    """
 
-    return bcrypt.checkpw(
-        plain_password.encode("utf-8"),
-        hashed_password.encode("utf-8")
-    )
+    if not plain_password or not hashed_password:
+        return False
+
+    try:
+        return bcrypt.checkpw(
+            plain_password.encode("utf-8"),
+            hashed_password.encode("utf-8")
+        )
+
+    except (ValueError, TypeError):
+        return False
+
+
 def create_access_token(
     data: dict,
-    expires_delta: timedelta | None = None
+    expires_delta: Optional[timedelta] = None
 ) -> str:
+    """
+    Tạo JWT access token.
+    """
 
     to_encode = data.copy()
 
-    if expires_delta:
+    if expires_delta is not None:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
         expire = (

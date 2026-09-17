@@ -12,6 +12,7 @@ from app.models.supplier import Supplier
 from app.models.user import User
 from app.schemas.purchase_order import (
     PurchaseOrderCreate,
+    PurchaseOrderUpdate,
 )
 
 
@@ -147,3 +148,104 @@ def create_purchase_order(
     db.refresh(order)
 
     return order
+
+
+def update_purchase_order(
+    db: Session,
+    purchase_order: PurchaseOrder,
+    data: PurchaseOrderUpdate
+) -> PurchaseOrder:
+
+    if purchase_order.status != "DRAFT":
+        raise ValueError(
+            "Only draft purchase orders can be updated"
+        )
+
+    update_data = data.model_dump(
+        exclude_unset=True
+    )
+
+    if "supplier_id" in update_data:
+
+        supplier = db.scalar(
+            select(Supplier)
+            .where(
+                Supplier.id == update_data["supplier_id"]
+            )
+        )
+
+        if supplier is None:
+            raise ValueError(
+                "Supplier not found"
+            )
+
+        if not supplier.is_active:
+            raise ValueError(
+                "Supplier is inactive"
+            )
+
+    for field, value in update_data.items():
+
+        setattr(
+            purchase_order,
+            field,
+            value
+        )
+
+    db.commit()
+    db.refresh(purchase_order)
+
+    return purchase_order
+
+
+def confirm_purchase_order(
+    db: Session,
+    purchase_order: PurchaseOrder
+) -> PurchaseOrder:
+
+    if purchase_order.status != "DRAFT":
+        raise ValueError(
+            "Only draft purchase orders can be confirmed"
+        )
+
+    purchase_order.status = "CONFIRMED"
+
+    db.commit()
+    db.refresh(purchase_order)
+
+    return purchase_order
+
+
+def cancel_purchase_order(
+    db: Session,
+    purchase_order: PurchaseOrder
+) -> PurchaseOrder:
+
+    if purchase_order.status not in [
+        "DRAFT",
+        "CONFIRMED"
+    ]:
+        raise ValueError(
+            "Purchase order cannot be cancelled"
+        )
+
+    purchase_order.status = "CANCELLED"
+
+    db.commit()
+    db.refresh(purchase_order)
+
+    return purchase_order
+
+
+def delete_purchase_order(
+    db: Session,
+    purchase_order: PurchaseOrder
+) -> None:
+
+    if purchase_order.status != "DRAFT":
+        raise ValueError(
+            "Only draft purchase orders can be deleted"
+        )
+
+    db.delete(purchase_order)
+    db.commit()

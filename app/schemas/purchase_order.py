@@ -40,6 +40,16 @@ class PurchaseOrderCreate(BaseModel):
     )
 
 
+class PurchaseOrderUpdate(BaseModel):
+    supplier_id: int | None = None
+
+    expected_date: datetime | None = None
+
+    note: str | None = Field(
+        default=None,
+        max_length=500
+    )
+
 class PurchaseOrderItemResponse(BaseModel):
     id: int
     product_id: int

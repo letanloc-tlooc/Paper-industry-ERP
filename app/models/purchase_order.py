@@ -35,6 +35,11 @@ class PurchaseOrder(Base):
         nullable=False,
         index=True
     )
+    warehouse_id: Mapped[int] = mapped_column(
+        ForeignKey("warehouses.id"),
+        nullable=False,
+        index=True
+    )
 
     status: Mapped[str] = mapped_column(
         String(30),
@@ -74,9 +79,20 @@ class PurchaseOrder(Base):
         nullable=False
     )
 
+    status: Mapped[str] = mapped_column(
+        String(30),
+        nullable=False,
+        default="DRAFT"
+    )
+
     supplier = relationship(
         "Supplier",
         back_populates="purchase_orders"
+    )
+
+    warehouse = relationship(
+        "Warehouse",
+        back_populates="purchase_orders",
     )
 
     items = relationship(
@@ -84,6 +100,7 @@ class PurchaseOrder(Base):
         back_populates="purchase_order",
         cascade="all, delete-orphan"
     )
+
 
     creator = relationship("User")
 
