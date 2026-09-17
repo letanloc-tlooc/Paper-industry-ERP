@@ -9,6 +9,7 @@ from app.routers.products import router as product_router
 from app.routers import warehouses
 from app.routers import inventory
 from app.routers import stock_movements
+from app.routers import purchase_order
 from app.models.user import User
 from app.routers.categories import router as category_router
 from app.routers.units import router as unit_router
@@ -26,6 +27,8 @@ app.include_router(unit_router)
 app.include_router(warehouses.router)
 app.include_router(inventory.router)
 app.include_router(stock_movements.router)
+app.include_router(purchase_order.router)
+
 @app.get("/")
 def root():
     return {

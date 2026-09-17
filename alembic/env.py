@@ -13,6 +13,8 @@ from app.models.product import Category, Unit, Product
 from app.models.warehouse import Warehouse
 from app.models.inventory import Inventory
 from app.models.stock_movement import StockMovement
+from app.models.supplier import Supplier
+from app.models.purchase_order import PurchaseOrder, PurchaseOrderItem
 from app.core.config import settings
 from app.core.database import Base
 
