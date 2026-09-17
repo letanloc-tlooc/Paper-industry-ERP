@@ -144,12 +144,14 @@ def create_stock_movement(
     # 4. Get or create inventory
     # --------------------------------------------------
 
-    statement = select(Inventory).where(
-        Inventory.warehouse_id
-        == movement_data.warehouse_id,
-        Inventory.product_id
-        == movement_data.product_id
+    statement = (
+    select(Inventory)
+    .where(
+        Inventory.warehouse_id == movement_data.warehouse_id,
+        Inventory.product_id == movement_data.product_id
     )
+    .with_for_update()
+)
 
     inventory = db.scalar(statement)
 
