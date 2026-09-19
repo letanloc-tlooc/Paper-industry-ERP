@@ -18,7 +18,9 @@ from app.schemas.stock_movement import (
 from app.services.stock_movement_service import (
     create_stock_movement,
     get_stock_movement_by_id,
-    get_stock_movements
+    get_stock_movements,
+    get_stock_movements_by_product,
+    get_stock_movements_by_warehouse,
 )
 
 
@@ -121,3 +123,66 @@ def get_stock_movement(
         )
 
     return movement
+
+@router.get(
+    "/warehouse/{warehouse_id}",
+    response_model=list[StockMovementResponse],
+)
+def read_stock_movements_by_warehouse(
+    warehouse_id: int,
+    skip: int = Query(
+        0,
+        ge=0,
+    ),
+    limit: int = Query(
+        100,
+        ge=1,
+        le=500,
+    ),
+    db: Session = Depends(get_db),
+):
+    try:
+        return get_stock_movements_by_warehouse(
+            db,
+            warehouse_id,
+            skip,
+            limit,
+        )
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
+
+
+@router.get(
+    "/product/{product_id}",
+    response_model=list[StockMovementResponse],
+)
+def read_stock_movements_by_product(
+    product_id: int,
+    skip: int = Query(
+        0,
+        ge=0,
+    ),
+    limit: int = Query(
+        100,
+        ge=1,
+        le=500,
+    ),
+    db: Session = Depends(get_db),
+):
+    try:
+        return get_stock_movements_by_product(
+            db,
+            product_id,
+            skip,
+            limit,
+        )
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )

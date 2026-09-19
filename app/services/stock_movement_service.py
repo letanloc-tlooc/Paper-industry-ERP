@@ -231,3 +231,64 @@ def create_stock_movement(
     db.refresh(movement)
 
     return movement
+
+def get_stock_movements_by_warehouse(
+    db: Session,
+    warehouse_id: int,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[StockMovement]:
+
+    warehouse = db.scalar(
+        select(Warehouse).where(
+            Warehouse.id == warehouse_id
+        )
+    )
+
+    if warehouse is None:
+        raise ValueError("Warehouse not found")
+
+    statement = (
+        select(StockMovement)
+        .where(
+            StockMovement.warehouse_id == warehouse_id
+        )
+        .offset(skip)
+        .limit(limit)
+        .order_by(StockMovement.id.desc())
+    )
+
+    return list(
+        db.scalars(statement).all()
+    )
+
+
+def get_stock_movements_by_product(
+    db: Session,
+    product_id: int,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[StockMovement]:
+
+    product = db.scalar(
+        select(Product).where(
+            Product.id == product_id
+        )
+    )
+
+    if product is None:
+        raise ValueError("Product not found")
+
+    statement = (
+        select(StockMovement)
+        .where(
+            StockMovement.product_id == product_id
+        )
+        .offset(skip)
+        .limit(limit)
+        .order_by(StockMovement.id.desc())
+    )
+
+    return list(
+        db.scalars(statement).all()
+    )
