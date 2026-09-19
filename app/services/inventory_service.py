@@ -4,6 +4,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.inventory import Inventory
+from app.models.product import Product
+from app.models.warehouse import Warehouse
 
 
 def get_inventory_by_id(
@@ -93,3 +95,96 @@ def get_or_create_inventory(
     db.flush()
 
     return inventory
+
+def get_inventory_by_warehouse(
+    db: Session,
+    warehouse_id: int,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[Inventory]:
+
+    warehouse = db.scalar(
+        select(Warehouse).where(
+            Warehouse.id == warehouse_id
+        )
+    )
+
+    if warehouse is None:
+        raise ValueError("Warehouse not found")
+
+    statement = (
+        select(Inventory)
+        .where(
+            Inventory.warehouse_id == warehouse_id
+        )
+        .offset(skip)
+        .limit(limit)
+        .order_by(Inventory.id.desc())
+    )
+
+    return list(
+        db.scalars(statement).all()
+    )
+
+
+def get_inventory_by_product(
+    db: Session,
+    product_id: int,
+    skip: int = 0,
+    limit: int = 100,
+) -> list[Inventory]:
+
+    product = db.scalar(
+        select(Product).where(
+            Product.id == product_id
+        )
+    )
+
+    if product is None:
+        raise ValueError("Product not found")
+
+    statement = (
+        select(Inventory)
+        .where(
+            Inventory.product_id == product_id
+        )
+        .offset(skip)
+        .limit(limit)
+        .order_by(Inventory.id.desc())
+    )
+
+    return list(
+        db.scalars(statement).all()
+    )
+
+
+def get_inventory_by_warehouse_and_product(
+    db: Session,
+    warehouse_id: int,
+    product_id: int,
+) -> Inventory | None:
+
+    warehouse = db.scalar(
+        select(Warehouse).where(
+            Warehouse.id == warehouse_id
+        )
+    )
+
+    if warehouse is None:
+        raise ValueError("Warehouse not found")
+
+    product = db.scalar(
+        select(Product).where(
+            Product.id == product_id
+        )
+    )
+
+    if product is None:
+        raise ValueError("Product not found")
+
+    return db.scalar(
+        select(Inventory).where(
+            Inventory.warehouse_id == warehouse_id,
+            Inventory.product_id == product_id,
+        )
+    )
