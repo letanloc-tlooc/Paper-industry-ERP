@@ -13,16 +13,14 @@ class PurchaseOrderStatus(str, Enum):
     CANCELLED = "CANCELLED"
 
 
+# ============================================================
+# CREATE
+# ============================================================
+
 class PurchaseOrderItemCreate(BaseModel):
     product_id: int
-
-    quantity: Decimal = Field(
-        gt=0
-    )
-
-    unit_price: Decimal = Field(
-        ge=0
-    )
+    quantity: Decimal = Field(gt=0)
+    unit_price: Decimal = Field(ge=0)
 
 
 class PurchaseOrderCreate(BaseModel):
@@ -32,13 +30,17 @@ class PurchaseOrderCreate(BaseModel):
 
     note: str | None = Field(
         default=None,
-        max_length=500
+        max_length=500,
     )
 
     items: list[PurchaseOrderItemCreate] = Field(
-        min_length=1
+        min_length=1,
     )
 
+
+# ============================================================
+# UPDATE
+# ============================================================
 
 class PurchaseOrderUpdate(BaseModel):
     supplier_id: int | None = None
@@ -47,8 +49,33 @@ class PurchaseOrderUpdate(BaseModel):
 
     note: str | None = Field(
         default=None,
-        max_length=500
+        max_length=500,
     )
+
+
+# ============================================================
+# RECEIVE
+# ============================================================
+
+class PurchaseOrderReceiveItem(BaseModel):
+    product_id: int
+
+    quantity: Decimal = Field(
+        gt=0,
+    )
+
+
+class PurchaseOrderReceive(BaseModel):
+    warehouse_id: int
+
+    items: list[PurchaseOrderReceiveItem] = Field(
+        min_length=1,
+    )
+
+
+# ============================================================
+# RESPONSE
+# ============================================================
 
 class PurchaseOrderItemResponse(BaseModel):
     id: int
@@ -58,7 +85,7 @@ class PurchaseOrderItemResponse(BaseModel):
     received_quantity: Decimal
 
     model_config = ConfigDict(
-        from_attributes=True
+        from_attributes=True,
     )
 
 
@@ -76,5 +103,5 @@ class PurchaseOrderResponse(BaseModel):
     items: list[PurchaseOrderItemResponse]
 
     model_config = ConfigDict(
-        from_attributes=True
+        from_attributes=True,
     )

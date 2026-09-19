@@ -8,11 +8,15 @@ from fastapi import (
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.dependencies import get_current_user
+
+from app.models.user import User
 
 from app.schemas.purchase_order import (
     PurchaseOrderCreate,
     PurchaseOrderResponse,
     PurchaseOrderUpdate,
+    PurchaseOrderReceive,
 )
 
 from app.services.purchase_order_service import (
@@ -23,10 +27,8 @@ from app.services.purchase_order_service import (
     get_purchase_order_by_id,
     get_purchase_orders,
     update_purchase_order,
+    receive_purchase_order,
 )
-
-from app.models.user import User
-from app.core.dependencies import get_current_user
 
 
 router = APIRouter(
@@ -34,6 +36,10 @@ router = APIRouter(
     tags=["Purchase Orders"],
 )
 
+
+# ============================================================
+# GET ALL PURCHASE ORDERS
+# ============================================================
 
 @router.get(
     "",
@@ -58,6 +64,10 @@ def read_purchase_orders(
     )
 
 
+# ============================================================
+# GET PURCHASE ORDER BY ID
+# ============================================================
+
 @router.get(
     "/{purchase_order_id}",
     response_model=PurchaseOrderResponse,
@@ -79,6 +89,10 @@ def read_purchase_order(
 
     return purchase_order
 
+
+# ============================================================
+# CREATE PURCHASE ORDER
+# ============================================================
 
 @router.post(
     "",
@@ -103,6 +117,10 @@ def create_purchase_order_api(
             detail=str(e),
         )
 
+
+# ============================================================
+# UPDATE PURCHASE ORDER
+# ============================================================
 
 @router.patch(
     "/{purchase_order_id}",
@@ -138,6 +156,10 @@ def update_purchase_order_api(
         )
 
 
+# ============================================================
+# CONFIRM PURCHASE ORDER
+# ============================================================
+
 @router.patch(
     "/{purchase_order_id}/confirm",
     response_model=PurchaseOrderResponse,
@@ -169,6 +191,10 @@ def confirm_purchase_order_api(
             detail=str(e),
         )
 
+
+# ============================================================
+# CANCEL PURCHASE ORDER
+# ============================================================
 
 @router.patch(
     "/{purchase_order_id}/cancel",
@@ -202,6 +228,10 @@ def cancel_purchase_order_api(
         )
 
 
+# ============================================================
+# DELETE PURCHASE ORDER
+# ============================================================
+
 @router.delete(
     "/{purchase_order_id}",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -232,3 +262,46 @@ def delete_purchase_order_api(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         )
+
+    return None
+
+
+# ============================================================
+# RECEIVE PURCHASE ORDER
+# ============================================================
+
+@router.post(
+    "/{purchase_order_id}/receive",
+    response_model=PurchaseOrderResponse,
+)
+def receive_purchase_order_api(
+    purchase_order_id: int,
+    data: PurchaseOrderReceive,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    purchase_order = get_purchase_order_by_id(
+        db,
+        purchase_order_id,
+    )
+
+    if purchase_order is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Purchase order not found",
+        )
+
+    try:
+        return receive_purchase_order(
+            db,
+            purchase_order,
+            data,
+            current_user,
+        )
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+

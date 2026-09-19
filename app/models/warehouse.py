@@ -54,7 +54,7 @@ class Warehouse(Base):
         "StockMovement",
         back_populates="warehouse"
     )
-    purchase_orders = relationship(
-        "PurchaseOrder",
-        back_populates="warehouse",
-    )
+    # purchase_orders = relationship(
+    #     "PurchaseOrder",
+    #     back_populates="warehouse",
+    # )
