@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 
 from sqlalchemy import select
@@ -27,39 +28,85 @@ def get_stock_movement_by_id(
 
 
 def get_stock_movements(
-    db: Session,
+   db: Session,
     warehouse_id: int | None = None,
     product_id: int | None = None,
     movement_type: str | None = None,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
     skip: int = 0,
-    limit: int = 100
+    limit: int = 100,
 ) -> list[StockMovement]:
 
+    # --------------------------------
+    # Validate warehouse
+    # --------------------------------
+    if warehouse_id is not None:
+        warehouse = db.scalar(
+            select(Warehouse).where(
+                Warehouse.id == warehouse_id
+            )
+        )
+
+        if warehouse is None:
+            raise ValueError("Warehouse not found")
+
+    # --------------------------------
+    # Validate product
+    # --------------------------------
+    if product_id is not None:
+        product = db.scalar(
+            select(Product).where(
+                Product.id == product_id
+            )
+        )
+
+        if product is None:
+            raise ValueError("Product not found")
+
+    # --------------------------------
+    # Build query
+    # --------------------------------
     statement = select(StockMovement)
 
+    # Warehouse filter
     if warehouse_id is not None:
         statement = statement.where(
             StockMovement.warehouse_id == warehouse_id
         )
 
+    # Product filter
     if product_id is not None:
         statement = statement.where(
             StockMovement.product_id == product_id
         )
 
+    # Movement type filter
     if movement_type is not None:
         statement = statement.where(
             StockMovement.movement_type == movement_type
         )
 
+    # Date from
+    if date_from is not None:
+        statement = statement.where(
+            StockMovement.created_at >= date_from
+        )
+
+    # Date to
+    if date_to is not None:
+        statement = statement.where(
+            StockMovement.created_at <= date_to
+        )
+
+    # --------------------------------
+    # Pagination + ordering
+    # --------------------------------
     statement = (
         statement
+        .order_by(StockMovement.id.desc())
         .offset(skip)
         .limit(limit)
-        .order_by(
-            StockMovement.created_at.desc(),
-            StockMovement.id.desc()
-        )
     )
 
     return list(
@@ -232,63 +279,63 @@ def create_stock_movement(
 
     return movement
 
-def get_stock_movements_by_warehouse(
-    db: Session,
-    warehouse_id: int,
-    skip: int = 0,
-    limit: int = 100,
-) -> list[StockMovement]:
+# def get_stock_movements_by_warehouse(
+#     db: Session,
+#     warehouse_id: int,
+#     skip: int = 0,
+#     limit: int = 100,
+# ) -> list[StockMovement]:
 
-    warehouse = db.scalar(
-        select(Warehouse).where(
-            Warehouse.id == warehouse_id
-        )
-    )
+#     warehouse = db.scalar(
+#         select(Warehouse).where(
+#             Warehouse.id == warehouse_id
+#         )
+#     )
 
-    if warehouse is None:
-        raise ValueError("Warehouse not found")
+#     if warehouse is None:
+#         raise ValueError("Warehouse not found")
 
-    statement = (
-        select(StockMovement)
-        .where(
-            StockMovement.warehouse_id == warehouse_id
-        )
-        .offset(skip)
-        .limit(limit)
-        .order_by(StockMovement.id.desc())
-    )
+#     statement = (
+#         select(StockMovement)
+#         .where(
+#             StockMovement.warehouse_id == warehouse_id
+#         )
+#         .offset(skip)
+#         .limit(limit)
+#         .order_by(StockMovement.id.desc())
+#     )
 
-    return list(
-        db.scalars(statement).all()
-    )
+#     return list(
+#         db.scalars(statement).all()
+#     )
 
 
-def get_stock_movements_by_product(
-    db: Session,
-    product_id: int,
-    skip: int = 0,
-    limit: int = 100,
-) -> list[StockMovement]:
+# def get_stock_movements_by_product(
+#     db: Session,
+#     product_id: int,
+#     skip: int = 0,
+#     limit: int = 100,
+# ) -> list[StockMovement]:
 
-    product = db.scalar(
-        select(Product).where(
-            Product.id == product_id
-        )
-    )
+#     product = db.scalar(
+#         select(Product).where(
+#             Product.id == product_id
+#         )
+#     )
 
-    if product is None:
-        raise ValueError("Product not found")
+#     if product is None:
+#         raise ValueError("Product not found")
 
-    statement = (
-        select(StockMovement)
-        .where(
-            StockMovement.product_id == product_id
-        )
-        .offset(skip)
-        .limit(limit)
-        .order_by(StockMovement.id.desc())
-    )
+#     statement = (
+#         select(StockMovement)
+#         .where(
+#             StockMovement.product_id == product_id
+#         )
+#         .offset(skip)
+#         .limit(limit)
+#         .order_by(StockMovement.id.desc())
+#     )
 
-    return list(
-        db.scalars(statement).all()
-    )
+#     return list(
+#         db.scalars(statement).all()
+#     )
