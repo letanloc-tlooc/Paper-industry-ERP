@@ -14,6 +14,7 @@ from app.core.database import get_db
 from app.models.user import User
 from app.schemas.inventory import InventoryResponse
 from app.schemas.low_stock import LowStockResponse
+from app.schemas.inventory_dashboard import InventoryDashboardResponse
 from app.schemas.inventory_adjustment import (
     InventoryAdjustmentCreate,
 )
@@ -23,6 +24,7 @@ from app.services.inventory_adjustment_service import (
 from app.services.low_stock_service import (
     get_low_stock_items,
 )
+from app.services.inventory_dashboard_service import get_inventory_dashboard
 from app.services.inventory_service import (
     get_inventories,
     get_inventory_by_product,
@@ -74,7 +76,28 @@ def get_inventory_list(
         limit=limit
     )
 
-
+@router.get(
+    "/dashboard",
+    response_model=InventoryDashboardResponse,
+)
+def read_inventory_dashboard(
+    warehouse_id: int | None = Query(
+        default=None,
+        ge=1,
+        description="Filter dashboard by warehouse ID",
+    ),
+    db: Session = Depends(get_db),
+):
+    try:
+        return get_inventory_dashboard(
+            db=db,
+            warehouse_id=warehouse_id,
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
 
 
 @router.get(
