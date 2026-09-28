@@ -118,6 +118,7 @@ def create_product(
         category_id=product_data.category_id,
         unit_id=product_data.unit_id,
         product_type=product_data.product_type.value,
+        purchase_price=product_data.purchase_price,
         description=product_data.description,
         min_stock=product_data.min_stock,
         is_active=True
@@ -182,6 +183,9 @@ def update_product(
     # 5. Update object
     for field, value in update_data.items():
         setattr(product, field, value)
+
+    if product_data.purchase_price is not None:
+        product.purchase_price = product_data.purchase_price
 
     db.commit()
     db.refresh(product)

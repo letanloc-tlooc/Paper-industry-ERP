@@ -64,30 +64,6 @@ def read_purchase_orders(
     )
 
 
-# ============================================================
-# GET PURCHASE ORDER BY ID
-# ============================================================
-
-@router.get(
-    "/{purchase_order_id}",
-    response_model=PurchaseOrderResponse,
-)
-def read_purchase_order(
-    purchase_order_id: int,
-    db: Session = Depends(get_db),
-):
-    purchase_order = get_purchase_order_by_id(
-        db,
-        purchase_order_id,
-    )
-
-    if purchase_order is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Purchase order not found",
-        )
-
-    return purchase_order
 
 
 # ============================================================
@@ -108,7 +84,7 @@ def create_purchase_order_api(
         return create_purchase_order(
             db,
             data,
-            current_user,
+            current_user.id,
         )
 
     except ValueError as e:
@@ -305,3 +281,27 @@ def receive_purchase_order_api(
             detail=str(e),
         )
 
+# ============================================================
+# GET PURCHASE ORDER BY ID
+# ============================================================
+
+@router.get(
+    "/{purchase_order_id}",
+    response_model=PurchaseOrderResponse,
+)
+def read_purchase_order(
+    purchase_order_id: int,
+    db: Session = Depends(get_db),
+):
+    purchase_order = get_purchase_order_by_id(
+        db,
+        purchase_order_id,
+    )
+
+    if purchase_order is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Purchase order not found",
+        )
+
+    return purchase_order

@@ -18,13 +18,24 @@ class PurchaseOrderStatus(str, Enum):
 # ============================================================
 
 class PurchaseOrderItemCreate(BaseModel):
-    product_id: int
-    quantity: Decimal = Field(gt=0)
-    unit_price: Decimal = Field(ge=0)
+    product_id: int = Field(
+        gt=0,
+        description="ID sản phẩm",
+    )
+
+    quantity: Decimal = Field(
+        gt=0,
+        description="Số lượng cần mua",
+    )
 
 
 class PurchaseOrderCreate(BaseModel):
-    supplier_id: int
+    supplier_id: int = Field(
+        gt=0,
+        description="ID nhà cung cấp",
+    )
+
+    order_date: datetime | None = None
 
     expected_date: datetime | None = None
 
@@ -35,6 +46,7 @@ class PurchaseOrderCreate(BaseModel):
 
     items: list[PurchaseOrderItemCreate] = Field(
         min_length=1,
+        description="Danh sách sản phẩm cần mua",
     )
 
 
@@ -82,26 +94,26 @@ class PurchaseOrderItemResponse(BaseModel):
     product_id: int
     quantity: Decimal
     unit_price: Decimal
+    line_total: Decimal
     received_quantity: Decimal
 
-    model_config = ConfigDict(
-        from_attributes=True,
-    )
+    model_config = {
+        "from_attributes": True
+    }
 
 
 class PurchaseOrderResponse(BaseModel):
     id: int
     order_number: str
     supplier_id: int
-    status: PurchaseOrderStatus
+    status: str
     order_date: datetime
     expected_date: datetime | None
     note: str | None
     created_by: int | None
     created_at: datetime
-
     items: list[PurchaseOrderItemResponse]
 
-    model_config = ConfigDict(
-        from_attributes=True,
-    )
+    model_config = {
+        "from_attributes": True
+    }

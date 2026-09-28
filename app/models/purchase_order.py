@@ -17,89 +17,77 @@ class PurchaseOrder(Base):
 
     id: Mapped[int] = mapped_column(
         primary_key=True,
-        index=True
+        index=True,
     )
 
     order_number: Mapped[str] = mapped_column(
         String(50),
         unique=True,
         nullable=False,
-        index=True
+        index=True,
     )
 
     supplier_id: Mapped[int] = mapped_column(
         ForeignKey(
             "suppliers.id",
-            ondelete="RESTRICT"
+            ondelete="RESTRICT",
         ),
         nullable=False,
-        index=True
+        index=True,
     )
-
-    # warehouse_id: Mapped[int] = mapped_column(
-    #     ForeignKey(
-    #         "warehouses.id",
-    #         ondelete="RESTRICT"
-    #     ),
-    #     nullable=False,
-    #     index=True
-    # )
 
     status: Mapped[str] = mapped_column(
         String(30),
         nullable=False,
         default="DRAFT",
-        index=True
+        index=True,
     )
 
     order_date: Mapped[datetime] = mapped_column(
         DateTime,
         default=datetime.utcnow,
-        nullable=False
+        nullable=False,
     )
 
     expected_date: Mapped[datetime | None] = mapped_column(
         DateTime,
-        nullable=True
+        nullable=True,
     )
 
     note: Mapped[str | None] = mapped_column(
         String(500),
-        nullable=True
+        nullable=True,
     )
 
     created_by: Mapped[int | None] = mapped_column(
         ForeignKey(
             "users.id",
-            ondelete="RESTRICT"
+            ondelete="RESTRICT",
         ),
         nullable=True,
-        index=True
+        index=True,
     )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=datetime.utcnow,
-        nullable=False
+        nullable=False,
     )
 
     supplier = relationship(
         "Supplier",
-        back_populates="purchase_orders"
+        back_populates="purchase_orders",
     )
-
-    # warehouse = relationship(
-    #     "Warehouse",
-    #     back_populates="purchase_orders"
-    # )
 
     items = relationship(
         "PurchaseOrderItem",
         back_populates="purchase_order",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
     )
 
-    creator = relationship("User")
+    creator = relationship(
+        "User",
+    )
 
 
 class PurchaseOrderItem(Base):
@@ -107,46 +95,56 @@ class PurchaseOrderItem(Base):
 
     id: Mapped[int] = mapped_column(
         primary_key=True,
-        index=True
+        index=True,
     )
 
     purchase_order_id: Mapped[int] = mapped_column(
         ForeignKey(
             "purchase_orders.id",
-            ondelete="CASCADE"
+            ondelete="CASCADE",
         ),
         nullable=False,
-        index=True
+        index=True,
     )
 
     product_id: Mapped[int] = mapped_column(
         ForeignKey(
             "products.id",
-            ondelete="RESTRICT"
+            ondelete="RESTRICT",
         ),
         nullable=False,
-        index=True
+        index=True,
     )
 
     quantity: Mapped[Decimal] = mapped_column(
         Numeric(15, 3),
-        nullable=False
+        nullable=False,
     )
 
+    # Giá mua tại thời điểm tạo Purchase Order.
+    # Giá này được lấy từ Product.purchase_price.
     unit_price: Mapped[Decimal] = mapped_column(
         Numeric(15, 2),
-        nullable=False
+        nullable=False,
+    )
+
+    # Thành tiền = quantity × unit_price
+    line_total: Mapped[Decimal] = mapped_column(
+        Numeric(18, 2),
+        nullable=False,
     )
 
     received_quantity: Mapped[Decimal] = mapped_column(
         Numeric(15, 3),
         default=Decimal("0"),
-        nullable=False
+        nullable=False,
     )
 
     purchase_order = relationship(
         "PurchaseOrder",
-        back_populates="items"
+        back_populates="items",
     )
 
-    product = relationship("Product")
+    product = relationship(
+        "Product",
+    )

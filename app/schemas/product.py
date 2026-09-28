@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 from enum import Enum
@@ -29,6 +30,12 @@ class ProductCreate(BaseModel):
     #     min_length=1,
     #     max_length=30
     # )
+
+    purchase_price: Decimal = Field(
+        ge=0,
+        decimal_places=2,
+        max_digits=15,
+    )
 
     description: str | None = Field(
         default=None,
@@ -65,6 +72,13 @@ class ProductUpdate(BaseModel):
     #     max_length=30
     # )
 
+    purchase_price: Decimal | None = Field(
+        default=None,
+        ge=0,
+        decimal_places=2,
+        max_digits=15,
+    )
+
     description: str | None = Field(
         default=None,
         max_length=500
@@ -87,7 +101,7 @@ class ProductResponse(BaseModel):
     unit_id: int
 
     product_type: ProductType 
-
+    purchase_price: Decimal
     description: str | None
 
     min_stock: float

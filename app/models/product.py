@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 
 from sqlalchemy import (
     Boolean,
@@ -23,17 +24,17 @@ class Category(Base):
         String(100),
         unique=True,
         nullable=False,
-        index=True
+        index=True,
     )
 
     description: Mapped[str | None] = mapped_column(
         String(255),
-        nullable=True
+        nullable=True,
     )
 
     products = relationship(
         "Product",
-        back_populates="category"
+        back_populates="category",
     )
 
 
@@ -47,18 +48,18 @@ class Unit(Base):
     name: Mapped[str] = mapped_column(
         String(50),
         unique=True,
-        nullable=False
+        nullable=False,
     )
 
     symbol: Mapped[str] = mapped_column(
         String(20),
         unique=True,
-        nullable=False
+        nullable=False,
     )
 
     products = relationship(
         "Product",
-        back_populates="unit"
+        back_populates="unit",
     )
 
 
@@ -67,82 +68,98 @@ class Product(Base):
 
     id: Mapped[int] = mapped_column(
         primary_key=True,
-        index=True
+        index=True,
     )
 
     code: Mapped[str] = mapped_column(
         String(50),
         unique=True,
         nullable=False,
-        index=True
+        index=True,
     )
 
     name: Mapped[str] = mapped_column(
         String(150),
         nullable=False,
-        index=True
+        index=True,
     )
 
     category_id: Mapped[int] = mapped_column(
         ForeignKey(
             "categories.id",
-            ondelete="RESTRICT"
+            ondelete="RESTRICT",
         ),
-        nullable=False
+        nullable=False,
     )
 
     unit_id: Mapped[int] = mapped_column(
         ForeignKey(
             "units.id",
-            ondelete="RESTRICT"
+            ondelete="RESTRICT",
         ),
-        nullable=False
+        nullable=False,
     )
 
     product_type: Mapped[str] = mapped_column(
         String(30),
         nullable=False,
-        index=True
+        index=True,
+    )
+
+    # Giá mua hiện tại / giá mua mặc định của sản phẩm.
+    #
+    # Khi tạo PurchaseOrder:
+    # Product.purchase_price
+    #        ↓
+    # PurchaseOrderItem.unit_price
+    #
+    # unit_price trong PurchaseOrderItem là giá snapshot
+    # tại thời điểm tạo PO.
+    purchase_price: Mapped[Decimal] = mapped_column(
+        Numeric(15, 2),
+        default=Decimal("0.00"),
+        nullable=False,
     )
 
     description: Mapped[str | None] = mapped_column(
         String(500),
-        nullable=True
+        nullable=True,
     )
 
-    min_stock: Mapped[float] = mapped_column(
+    min_stock: Mapped[Decimal] = mapped_column(
         Numeric(15, 3),
         default=0,
-        nullable=False
+        nullable=False,
     )
 
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         default=True,
-        nullable=False
+        nullable=False,
     )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=datetime.utcnow,
-        nullable=False
+        nullable=False,
     )
 
     category = relationship(
         "Category",
-        back_populates="products"
+        back_populates="products",
     )
 
     unit = relationship(
         "Unit",
-        back_populates="products"
+        back_populates="products",
     )
+
     inventories = relationship(
         "Inventory",
-        back_populates="product"
+        back_populates="product",
     )
 
     stock_movements = relationship(
         "StockMovement",
-        back_populates="product"
+        back_populates="product",
     )

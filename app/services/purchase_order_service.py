@@ -1,4 +1,5 @@
 from decimal import Decimal
+from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -85,137 +86,90 @@ def get_purchase_orders(
 def create_purchase_order(
     db: Session,
     data: PurchaseOrderCreate,
-    current_user: User,
+    current_user_id: int | None = None,
 ) -> PurchaseOrder:
 
-    # --------------------------------------------------------
-    # Validate Supplier
-    # --------------------------------------------------------
+    try:
+        # 1. Kiểm tra supplier
+        supplier = db.get(Supplier, data.supplier_id)
 
-    supplier = db.scalar(
-        select(Supplier)
-        .where(
-            Supplier.id == data.supplier_id
-        )
-    )
+        if supplier is None:
+            raise ValueError("Supplier not found")
 
-    if supplier is None:
-        raise ValueError(
-            "Supplier not found"
-        )
+        # 2. Kiểm tra danh sách item không rỗng
+        if not data.items:
+            raise ValueError("Purchase order must contain at least one item")
 
-    if not supplier.is_active:
-        raise ValueError(
-            "Supplier is inactive"
-        )
+        # 3. Kiểm tra duplicate product
+        product_ids = [item.product_id for item in data.items]
 
-    # --------------------------------------------------------
-    # Validate Items
-    # --------------------------------------------------------
-
-    if not data.items:
-        raise ValueError(
-            "Purchase order must contain at least one item"
-        )
-
-    # --------------------------------------------------------
-    # Prevent duplicate products
-    # --------------------------------------------------------
-
-    product_ids = [
-        item.product_id
-        for item in data.items
-    ]
-
-    if len(product_ids) != len(set(product_ids)):
-        raise ValueError(
-            "A product cannot appear multiple times "
-            "in the same purchase order"
-        )
-
-    # --------------------------------------------------------
-    # Load Products
-    # --------------------------------------------------------
-
-    products = db.scalars(
-        select(Product)
-        .where(
-            Product.id.in_(product_ids)
-        )
-    ).all()
-
-    product_map = {
-        product.id: product
-        for product in products
-    }
-
-    # --------------------------------------------------------
-    # Validate Products
-    # --------------------------------------------------------
-
-    for item in data.items:
-
-        product = product_map.get(
-            item.product_id
-        )
-
-        if product is None:
+        if len(product_ids) != len(set(product_ids)):
             raise ValueError(
-                f"Product {item.product_id} not found"
+                "A product cannot appear more than once in the same purchase order"
             )
 
-        if not product.is_active:
-            raise ValueError(
-                f"Product {item.product_id} is inactive"
-            )
-
-    # --------------------------------------------------------
-    # Create Purchase Order
-    # --------------------------------------------------------
-
-    purchase_order = PurchaseOrder(
-        order_number=generate_order_number(db),
-        supplier_id=data.supplier_id,
-        status="DRAFT",
-        order_date=datetime.utcnow(),
-        expected_date=data.expected_date,
-        note=data.note,
-        created_by=current_user.id,
-    )
-
-    db.add(purchase_order)
-
-    # Generate PO ID
-    db.flush()
-
-    # --------------------------------------------------------
-    # Create Purchase Order Items
-    # --------------------------------------------------------
-
-    for item in data.items:
-
-        purchase_order_item = PurchaseOrderItem(
-            purchase_order_id=purchase_order.id,
-            product_id=item.product_id,
-            quantity=item.quantity,
-            unit_price=item.unit_price,
-            received_quantity=Decimal("0"),
+        # 4. Tạo PurchaseOrder
+        purchase_order = PurchaseOrder(
+            order_number=generate_order_number(db),
+            supplier_id=data.supplier_id,
+            status="DRAFT",
+            expected_date=data.expected_date,
+            note=data.note,
+            created_by=current_user_id,
         )
 
-        db.add(purchase_order_item)
+        db.add(purchase_order)
 
-    # --------------------------------------------------------
-    # Commit
-    # --------------------------------------------------------
+        # 5. Xử lý từng item
+        for item_data in data.items:
 
-    db.commit()
+            product = db.scalar(
+                select(Product).where(
+                    Product.id == item_data.product_id,
+                    Product.is_active.is_(True),
+                )
+            )
 
-    db.refresh(
-        purchase_order
-    )
+            if product is None:
+                raise ValueError(
+                    f"Product {item_data.product_id} not found or inactive"
+                )
 
-    return purchase_order
+            quantity = item_data.quantity
 
+            if quantity <= 0:
+                raise ValueError(
+                    f"Quantity for product {product.id} must be greater than 0"
+                )
+
+            # 6. Lấy giá mua hiện tại từ Product
+            unit_price = product.purchase_price
+
+            # 7. Tính thành tiền
+            line_total = quantity * unit_price
+
+            # 8. Tạo PurchaseOrderItem
+            item = PurchaseOrderItem(
+                product_id=product.id,
+                quantity=quantity,
+                unit_price=unit_price,
+                line_total=line_total,
+                received_quantity=Decimal("0"),
+            )
+
+            purchase_order.items.append(item)
+
+        # 9. Lưu database
+        db.commit()
+
+        # 10. Refresh để lấy dữ liệu mới nhất
+        db.refresh(purchase_order)
+
+        return purchase_order
+
+    except Exception:
+        db.rollback()
+        raise
 
 # ============================================================
 # Update Purchase Order
