@@ -12,7 +12,12 @@ from app.core.dependencies import get_current_user
 from app.core.authorization import require_permission
 from app.core.database import get_db
 from app.models.user import User
-from app.schemas.inventory import InventoryResponse
+from app.schemas.inventory import (
+    InventoryReleaseRequest,
+    InventoryReserveRequest,
+    InventoryStockOutRequest,
+    InventoryResponse
+)
 from app.schemas.low_stock import LowStockResponse
 from app.schemas.inventory_dashboard import InventoryDashboardResponse
 from app.schemas.inventory_adjustment import (
@@ -30,7 +35,10 @@ from app.services.inventory_service import (
     get_inventory_by_product,
     get_inventory_by_warehouse,
     get_inventory_by_warehouse_and_product,
-    get_inventory_by_id
+    get_inventory_by_id,
+    reserve_stock,
+    release_stock,
+    stock_out
 )
 
 
@@ -257,6 +265,79 @@ def read_low_stock_items(
             detail=str(e),
         )
 
+@router.post(
+    "/reserve",
+    response_model=InventoryResponse,
+)
+def reserve_inventory_stock(
+    data: InventoryReserveRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user
+    ),
+):
+    try:
+        return reserve_stock(
+            db=db,
+            warehouse_id=data.warehouse_id,
+            product_id=data.product_id,
+            quantity=data.quantity,
+        )
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+
+@router.post(
+    "/release",
+    response_model=InventoryResponse,
+)
+def release_inventory_stock(
+    data: InventoryReleaseRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    try:
+        return release_stock(
+            db=db,
+            warehouse_id=data.warehouse_id,
+            product_id=data.product_id,
+            quantity=data.quantity,
+        )
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+
+@router.post(
+    "/stock-out",
+    response_model=InventoryResponse,
+)
+def stock_out_inventory(
+    data: InventoryStockOutRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    try:
+        return stock_out(
+            db=db,
+            warehouse_id=data.warehouse_id,
+            product_id=data.product_id,
+            quantity=data.quantity,
+            reason=data.reason,
+            reference_type=data.reference_type,
+            reference_id=data.reference_id,
+            current_user_id=current_user.id,
+        )
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
 
 @router.get(
     "/{inventory_id}",
